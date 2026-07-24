@@ -1,78 +1,120 @@
+
+require("dotenv").config();
+
 const express = require("express");
+const mongoose = require("mongoose");
+
+const Student = require("./models/Student");
 
 const app = express();
-const PORT = 3000;
+
+const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// Sample Data
-let students = [
-  { id: 1, name: "Ali" },
-  { id: 2, name: "Sara" },
-  { id: 3, name: "Bilal" }
-];
+// MongoDB Connection
+mongoose.connect(process.env.MONGO_URI)
+.then(() => {
+    console.log("✅ MongoDB Connected");
+})
+.catch((err) => {
+    console.log("❌ MongoDB Connection Error:", err);
+});
+
 
 // Home Route
 app.get("/", (req, res) => {
-  res.send("Welcome to Student API");
+    res.send("Welcome to Student API");
 });
+
 
 // GET All Students
-app.get("/students", (req, res) => {
-  res.json(students);
+app.get("/students", async (req, res) => {
+    try {
+        const students = await Student.find();
+        res.json(students);
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
 });
 
-// GET Student by ID
-app.get("/students/:id", (req, res) => {
-  const student = students.find(s => s.id == req.params.id);
 
-  if (!student) {
-    return res.status(404).json({ message: "Student not found" });
-  }
+// POST Student
+app.post("/students", async (req, res) => {
+    try {
+        const student = new Student({
+            name: req.body.name
+        });
 
-  res.json(student);
+        await student.save();
+
+        res.status(201).json({
+            message: "Student Added Successfully",
+            student
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
 });
 
-// POST New Student
-app.post("/students", (req, res) => {
-  const newStudent = {
-    id: students.length + 1,
-    name: req.body.name
-  };
 
-  students.push(newStudent);
+// PUT Student
+app.put("/students/:id", async (req, res) => {
+    try {
+        const student = await Student.findByIdAndUpdate(
+            req.params.id,
+            { name: req.body.name },
+            { new: true }
+        );
 
-  res.status(201).json({
-    message: "Student added successfully",
-    student: newStudent
-  });
+        if (!student) {
+            return res.status(404).json({
+                message: "Student Not Found"
+            });
+        }
+
+        res.json({
+            message: "Student Updated Successfully",
+            student
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
 });
 
-// PUT Update Student
-app.put("/students/:id", (req, res) => {
-  const student = students.find(s => s.id == req.params.id);
-
-  if (!student) {
-    return res.status(404).json({ message: "Student not found" });
-  }
-
-  student.name = req.body.name;
-
-  res.json({
-    message: "Student updated successfully",
-    student
-  });
-});
 
 // DELETE Student
-app.delete("/students/:id", (req, res) => {
-  students = students.filter(s => s.id != req.params.id);
+app.delete("/students/:id", async (req, res) => {
+    try {
+        const student = await Student.findByIdAndDelete(req.params.id);
 
-  res.json({
-    message: "Student deleted successfully"
-  });
+        if (!student) {
+            return res.status(404).json({
+                message: "Student Not Found"
+            });
+        }
+
+        res.json({
+            message: "Student Deleted Successfully"
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        });
+    }
 });
 
+
+// Server Start
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+    console.log(`🚀 Server running on port ${PORT}`);
 });
