@@ -3,45 +3,73 @@ const express = require("express");
 const app = express();
 const PORT = 3000;
 
-// Middleware
-// Middleware
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url}`);
-  next();
-});
-
 app.use(express.json());
 
+// Sample Data
+let students = [
+  { id: 1, name: "Ali" },
+  { id: 2, name: "Sara" },
+  { id: 3, name: "Bilal" }
+];
 
 // Home Route
 app.get("/", (req, res) => {
-  res.send("Welcome to GrowthLift API");
+  res.send("Welcome to Student API");
 });
 
-// About Route
-app.get("/about", (req, res) => {
-  res.send("This is the About route");
+// GET All Students
+app.get("/students", (req, res) => {
+  res.json(students);
 });
 
-// Interns Route
-app.get("/api/interns", (req, res) => {
-  res.json({
-    interns: ["Ali", "Sara", "Bilal"]
+// GET Student by ID
+app.get("/students/:id", (req, res) => {
+  const student = students.find(s => s.id == req.params.id);
+
+  if (!student) {
+    return res.status(404).json({ message: "Student not found" });
+  }
+
+  res.json(student);
+});
+
+// POST New Student
+app.post("/students", (req, res) => {
+  const newStudent = {
+    id: students.length + 1,
+    name: req.body.name
+  };
+
+  students.push(newStudent);
+
+  res.status(201).json({
+    message: "Student added successfully",
+    student: newStudent
   });
 });
 
-// Route Parameter
-app.get("/api/interns/:id", (req, res) => {
+// PUT Update Student
+app.put("/students/:id", (req, res) => {
+  const student = students.find(s => s.id == req.params.id);
+
+  if (!student) {
+    return res.status(404).json({ message: "Student not found" });
+  }
+
+  student.name = req.body.name;
+
   res.json({
-    id: req.params.id,
-    name: "Sample Intern"
+    message: "Student updated successfully",
+    student
   });
 });
 
-// Query Parameter
-app.get("/api/search", (req, res) => {
+// DELETE Student
+app.delete("/students/:id", (req, res) => {
+  students = students.filter(s => s.id != req.params.id);
+
   res.json({
-    query: req.query.q
+    message: "Student deleted successfully"
   });
 });
 
