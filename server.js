@@ -1,10 +1,9 @@
-
 require("dotenv").config();
 
 const express = require("express");
 const mongoose = require("mongoose");
 
-const Student = require("./models/Student");
+const Task = require("./models/Task");
 
 const app = express();
 
@@ -21,98 +20,81 @@ mongoose.connect(process.env.MONGO_URI)
     console.log("❌ MongoDB Connection Error:", err);
 });
 
-
 // Home Route
 app.get("/", (req, res) => {
-    res.send("Welcome to Student API");
+    res.send("Welcome to Task API");
 });
 
-
-// GET All Students
-app.get("/students", async (req, res) => {
+// GET All Tasks
+app.get("/api/tasks", async (req, res) => {
     try {
-        const students = await Student.find();
-        res.json(students);
+        const tasks = await Task.find();
+        res.json(tasks);
     } catch (error) {
-        res.status(500).json({
-            message: error.message
-        });
+        res.status(500).json({ message: error.message });
     }
 });
 
-
-// POST Student
-app.post("/students", async (req, res) => {
+// POST New Task
+app.post("/api/tasks", async (req, res) => {
     try {
-        const student = new Student({
-            name: req.body.name
+        const task = await Task.create({
+            title: req.body.title
         });
 
-        await student.save();
-
-        res.status(201).json({
-            message: "Student Added Successfully",
-            student
-        });
-
+        res.status(201).json(task);
     } catch (error) {
-        res.status(500).json({
-            message: error.message
-        });
+        res.status(500).json({ message: error.message });
     }
 });
 
-
-// PUT Student
-app.put("/students/:id", async (req, res) => {
+// GET Single Task
+app.get("/api/tasks/:id", async (req, res) => {
     try {
-        const student = await Student.findByIdAndUpdate(
+        const task = await Task.findById(req.params.id);
+
+        if (!task) {
+            return res.status(404).json({
+                message: "Not found"
+            });
+        }
+
+        res.json(task);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// PUT Update Task
+app.put("/api/tasks/:id", async (req, res) => {
+    try {
+        const task = await Task.findByIdAndUpdate(
             req.params.id,
-            { name: req.body.name },
+            req.body,
             { new: true }
         );
 
-        if (!student) {
+        if (!task) {
             return res.status(404).json({
-                message: "Student Not Found"
+                message: "Not found"
             });
         }
 
-        res.json({
-            message: "Student Updated Successfully",
-            student
-        });
-
+        res.json(task);
     } catch (error) {
-        res.status(500).json({
-            message: error.message
-        });
+        res.status(500).json({ message: error.message });
     }
 });
 
-
-// DELETE Student
-app.delete("/students/:id", async (req, res) => {
+// DELETE Task
+app.delete("/api/tasks/:id", async (req, res) => {
     try {
-        const student = await Student.findByIdAndDelete(req.params.id);
-
-        if (!student) {
-            return res.status(404).json({
-                message: "Student Not Found"
-            });
-        }
-
-        res.json({
-            message: "Student Deleted Successfully"
-        });
-
+        await Task.findByIdAndDelete(req.params.id);
+        res.status(204).send();
     } catch (error) {
-        res.status(500).json({
-            message: error.message
-        });
+        res.status(500).json({ message: error.message });
     }
 });
-
 
 // Server Start
 app.listen(PORT, () => {
